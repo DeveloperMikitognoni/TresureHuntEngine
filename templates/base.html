@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    {% if request.path != '/login' %}
     <meta http-equiv="refresh" content="30">
-    <title>ESN Oslo Treasure Hunt</title>
+    {% endif %}
+    <title>ESN Oslo Hunt</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -23,7 +25,7 @@
     <header class="bg-slate-900 text-white pt-6 pb-12 px-6 rounded-b-[2.5rem] shadow-xl relative z-10 transition-all duration-500 {% if not game_active %}border-b-4 border-red-500{% endif %}">
         <div class="flex justify-between items-center max-w-lg mx-auto">
             <div>
-                <h1 class="text-2xl font-extrabold tracking-tight">ESN Oslo Treasure Hunt</h1>
+                <h1 class="text-2xl font-extrabold tracking-tight">ESN Oslo Hunt</h1>
                 <div class="flex items-center gap-2">
                     <p class="text-slate-400 text-sm font-medium">{% block subtitle %}Dashboard{% endblock %}</p>
                     {% if not game_active %}
@@ -33,25 +35,30 @@
             </div>
             
             <div class="flex gap-3 items-center">
-                <form action="/admin/toggle_game" method="POST" class="m-0">
-                    <button type="submit" class="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg active:scale-95 border-2 {% if game_active %}bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500 hover:text-white{% else %}bg-green-500/20 border-green-500 text-green-400 hover:bg-green-500 hover:text-white{% endif %}">
-                        {% if game_active %}
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                            </svg>
-                        {% else %}
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-                            </svg>
-                        {% endif %}
-                    </button>
-                </form>
+                
+                {% if is_admin %}
+                    <form action="/admin/toggle_game" method="POST" class="m-0">
+                        <button type="submit" class="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg active:scale-95 border-2 {% if game_active %}bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500 hover:text-white{% else %}bg-green-500/20 border-green-500 text-green-400 hover:bg-green-500 hover:text-white{% endif %}">
+                            {% if game_active %}
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                            {% else %}
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+                            {% endif %}
+                        </button>
+                    </form>
 
-                <div class="bg-slate-800 p-2 rounded-full cursor-pointer hover:bg-slate-700 transition" onclick="window.location.reload()">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                </div>
+                    <a href="/logout" class="bg-slate-800 p-2 rounded-full cursor-pointer hover:bg-slate-700 transition text-gray-400 hover:text-white" title="Logout">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                    </a>
+                {% else %}
+                    <a href="/login" class="bg-slate-800 p-2 rounded-full cursor-pointer hover:bg-slate-700 transition text-gray-400 hover:text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                        </svg>
+                    </a>
+                {% endif %}
             </div>
         </div>
     </header>
@@ -77,8 +84,12 @@
             </a>
         </div>
     </nav>
+    
+    {% if request.path != '/login' %}
     <script>
+        // Refresh automatico solo se non siamo nel login
         setTimeout(() => window.location.reload(), 30000);
     </script>
+    {% endif %}
 </body>
 </html>

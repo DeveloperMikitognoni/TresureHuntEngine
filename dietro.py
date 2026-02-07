@@ -1,6 +1,6 @@
-from flask import Flask, request, jsonify, redirect, render_template, url_for
+from flask import Flask, request, jsonify, redirect, render_template, session, url_for
 from flask_cors import CORS
-from pymongo import MongoClient, UpdateOne
+from pymongo import MongoClient
 from datetime import datetime
 from dotenv import load_dotenv
 import os
@@ -13,6 +13,10 @@ mongo_uri = os.getenv("MONGO_URI")
 client = MongoClient(mongo_uri)
 db = client["TreasureHuntDB"]
 
+# PASSWORD PER L'ADMIN
+ADMIN_PASSWORD = "Racoon2k26"  # <--- CAMBIA QUESTA PASSWORD!
+APP_SECRET_KEY = "CucurucucuPaloma" # Necessaria per i cookie
+
 allowedStations = [
     "clue1-7K9P2L5N6Q3W", "clue2-R4T9YU2I6O1S", "clue3-F9G3HJ7K2LZ4",
     "clue4-X8CV6B1NM3Q9", "clue5-W5E1R3Y7U2I9", "clue6-O4P8AS1D7FG5",
@@ -23,6 +27,7 @@ allowedStations = [
 allowedTeams = [f"team{i}" for i in range(1, 101)]
 
 app = Flask(__name__)
+app.secret_key = APP_SECRET_KEY # Abilita le sessioni
 CORS(app)
 
 # --- HELPER FUNCTIONS ---
@@ -35,16 +40,13 @@ def get_oslo_time(timestamp):
     return timestamp.astimezone(oslo_tz)
 
 def is_game_active():
-    """Controlla nel DB se il gioco è attivo."""
     config = db.config.find_one({"_id": "game_state"})
     if config:
         return config.get("active", False)
-    # Se non esiste configurazione, creala come Pausa (False) di default
     db.config.insert_one({"_id": "game_state", "active": False})
     return False
 
 def set_game_active(status: bool):
-    """Imposta lo stato del gioco."""
     db.config.update_one(
         {"_id": "game_state"},
         {"$set": {"active": status}},
@@ -52,30 +54,53 @@ def set_game_active(status: bool):
     )
 
 # --- CONTEXT PROCESSOR ---
-# Questo rende la variabile 'game_active' disponibile in TUTTI i template HTML
+# Inietta variabili in tutti i template HTML automaticamente
 @app.context_processor
-def inject_game_state():
-    return dict(game_active=is_game_active())
+def inject_globals():
+    return dict(
+        game_active=is_game_active(),
+        is_admin=session.get('is_admin', False) # Dice al template se siamo loggati
+    )
 
-# --- ROTTE ---
+# --- ROTTE ADMIN / LOGIN ---
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = None
+    if request.method == "POST":
+        password = request.form.get("password")
+        if password == ADMIN_PASSWORD:
+            session['is_admin'] = True # Salva nella sessione
+            return redirect('/events')
+        else:
+            error = "Wrong password!"
+    return render_template('login.html', error=error)
+
+@app.route("/logout")
+def logout():
+    session.pop('is_admin', None)
+    return redirect('/events')
+
+@app.route("/admin/toggle_game", methods=["POST"])
+def toggle_game():
+    # PROTEZIONE: Se non è admin, rimanda al login
+    if not session.get('is_admin'):
+        return redirect('/login')
+        
+    current_status = is_game_active()
+    set_game_active(not current_status)
+    return redirect(request.referrer or '/events')
+
+# --- ROTTE STANDARD ---
 
 @app.route("/", methods=["GET"])
 def home():
     return redirect("https://scannerfuuun.vercel.app", code=302)
 
-# Rotta per cambiare stato (Play/Pausa)
-@app.route("/admin/toggle_game", methods=["POST"])
-def toggle_game():
-    current_status = is_game_active()
-    set_game_active(not current_status)
-    # Ritorna alla pagina da cui è arrivata la richiesta
-    return redirect(request.referrer or '/events')
-
 @app.route("/events", methods=["GET"])
 def events_feed():
     all_events = []
     
-    # 1. Recupera tutti gli eventi
     for station_name in allowedStations:
         collection = db[station_name]
         entries = list(collection.find({}, {"team": 1, "timestamp": 1, "_id": 0}))
@@ -83,12 +108,9 @@ def events_feed():
             entry['station'] = station_name
             if 'timestamp' in entry:
                 entry['timestamp_oslo'] = get_oslo_time(entry['timestamp'])
-                # Salviamo anche il timestamp originale per confronti precisi
                 entry['ts_raw'] = entry['timestamp'].timestamp()
                 all_events.append(entry)
 
-    # 2. Trova il "Primo Evento" per ogni Clue
-    # Creiamo un dizionario: { "clue1": min_timestamp, "clue2": min_timestamp... }
     first_discoveries = {}
     for e in all_events:
         s = e['station']
@@ -96,10 +118,8 @@ def events_feed():
         if s not in first_discoveries or t < first_discoveries[s]:
             first_discoveries[s] = t
 
-    # 3. Ordina per visualizzazione (dal più recente)
     all_events.sort(key=lambda x: x['timestamp_oslo'], reverse=True)
     
-    # 4. Filtri UI
     unique_teams = sorted(list(set(e.get('team', '') for e in all_events)))
     unique_stations = sorted(list(set(e.get('station', '') for e in all_events)))
     selected_team = request.args.get('team')
@@ -111,18 +131,15 @@ def events_feed():
     if selected_station and selected_station != "all":
         filtered_events = [e for e in filtered_events if e.get('station') == selected_station]
 
-    # 5. Formatta per il template
     display_events = []
     for event in filtered_events:
-        # Determina se questo evento è il "First Blood" per quella stazione
         is_first = (event['ts_raw'] == first_discoveries.get(event['station']))
-        
         display_events.append({
             "team_display": event.get('team', 'Unknown').replace("team", "Team ").title(),
             "station": event.get('station', 'Unknown'),
             "time": event['timestamp_oslo'].strftime("%H:%M"),
             "is_special": event.get('station') in ["Teo", "Alex"],
-            "is_first": is_first  # <-- Nuovo Flag
+            "is_first": is_first
         })
 
     return render_template(
@@ -141,9 +158,7 @@ def leanderboard():
     stations = db.list_collection_names()
 
     for station in stations:
-        if station not in allowedStations and station != "config": # Ignora config
-            continue
-        if station == "config": continue
+        if station not in allowedStations: continue
 
         collection = db[station]
         entries = list(collection.find({}).sort("timestamp", 1))
@@ -154,7 +169,6 @@ def leanderboard():
         for idx, entry in enumerate(entries):
             team = entry.get("team")
             if not team: continue
-            
             if team not in leaderboard: leaderboard[team] = 0
             station_points = 20 + bonus_points
             if idx == 0: station_points *= 1.25
@@ -172,18 +186,15 @@ def leanderboard():
 
     return render_template('leaderboard.html', leaderboard=display_board)
 
-# --- API CHECK-IN ---
 @app.route("/<stationid>/<teamid>", methods=["GET"])
 def handle_get_station_team(stationid, teamid):
-    # 1. CONTROLLO STATO GIOCO
     if not is_game_active():
         return jsonify({
             "status": "error",
             "message": "⛔ Game has not started yet (or is paused).",
             "game_active": False
-        }), 200 # Ritorniamo 200 per mostrare il messaggio JSON all'utente dello scanner
+        }), 200
 
-    # 2. Validazione ID
     if stationid not in allowedStations:
         return jsonify({"error": "Invalid Station ID"}), 400
     if teamid not in allowedTeams:
