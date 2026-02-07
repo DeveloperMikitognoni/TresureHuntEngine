@@ -73,6 +73,10 @@ def home():
 def leanderboard():
     leaderboard = {}
     stations = db.list_collection_names()
+    
+    # Timezone for display
+    oslo_tz = pytz.timezone('Europe/Oslo')
+    now_oslo = datetime.now(oslo_tz).strftime("%H:%M:%S")
 
     # --- LOGIC (UNCHANGED) ---
     for station in stations:
@@ -87,123 +91,207 @@ def leanderboard():
             station_points = 20 + bonus_points
             if idx == 0: station_points *= 1.25
             leaderboard[team] += station_points
+    
+    # Sort
     sorted_leaderboard = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
     # --- END LOGIC ---
 
-    # --- NEW DESIGN (ENGLISH) ---
-    html = """
+    html = f"""
     <!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-        <title>Leaderboard | ESN Oslo Treasure Hunt</title>
+        <meta http-equiv="refresh" content="30"> <title>Leaderboard | ESN Oslo Treasure Hunt</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
         <style>
-            :root {
-                --primary: #0a2342;
-                --primary-light: #1c3a63;
-                --accent: #ffab00;
-                --accent-glow: rgba(255, 171, 0, 0.3);
-                --bg: #f4f6f9;
+            :root {{
+                --bg-color: #f0f4f8;
+                --header-bg: #0f172a;
                 --card-bg: #ffffff;
-                --text-dark: #1a1a1a;
-                --text-muted: #8898aa;
-                --radius: 18px;
-                --shadow: 0 4px 20px rgba(0,0,0,0.08);
-            }
-            body {
-                font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                background-color: var(--bg); color: var(--text-dark); margin: 0; padding-bottom: 30px; -webkit-font-smoothing: antialiased;
-            }
-            .header {
-                background: linear-gradient(135deg, var(--primary), var(--primary-light));
-                color: white; padding: 15px 20px; position: sticky; top: 0; z-index: 100;
-                box-shadow: 0 4px 15px rgba(10, 35, 66, 0.3);
-                border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
-            }
-            .header-content { max-width: 600px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
-            .header h1 { margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: -0.5px; display: flex; flex-direction: column; line-height: 1.2;}
-            .header h1 span.subtitle { font-size: 0.8rem; font-weight: 400; opacity: 0.8; }
+                --text-main: #1e293b;
+                --text-muted: #94a3b8;
+                --accent-color: #0ea5e9;
+                --gold: #fbbf24;
+                --silver: #e2e8f0;
+                --bronze: #d97706;
+            }}
             
-            .nav-controls { display: flex; gap: 10px; align-items: center; }
-            .btn-icon {
-                background: rgba(255,255,255,0.15); border: none; color: white; width: 36px; height: 36px; border-radius: 50%;
-                font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
-            }
-            .btn-icon:active { transform: scale(0.9); background: rgba(255,255,255,0.3); }
-            .btn-nav {
-                background: var(--accent); color: var(--primary); border: none; padding: 8px 16px; border-radius: 30px;
-                font-weight: 700; font-size: 0.85rem; text-decoration: none; box-shadow: 0 4px 15px var(--accent-glow); transition: transform 0.2s;
-                display: flex; align-items: center; gap: 6px;
-            }
-            .btn-nav:active { transform: translateY(2px); }
+            body {{
+                font-family: 'Inter', sans-serif;
+                background-color: var(--bg-color);
+                color: var(--text-main);
+                margin: 0;
+                padding-bottom: 40px;
+            }}
+
+            /* Header */
+            .header {{
+                background-color: var(--header-bg);
+                color: white;
+                padding: 20px;
+                position: sticky;
+                top: 0;
+                z-index: 1000;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+                border-bottom-left-radius: 24px;
+                border-bottom-right-radius: 24px;
+            }}
+
+            .header-top {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                max-width: 600px;
+                margin: 0 auto;
+            }}
+
+            h1 {{
+                margin: 0;
+                font-size: 1.25rem;
+                font-weight: 800;
+                line-height: 1.2;
+            }}
             
-            .container { max-width: 600px; margin: 25px auto; padding: 0 15px; }
+            h1 span {{
+                display: block;
+                font-size: 0.85rem;
+                font-weight: 500;
+                opacity: 0.8;
+                margin-top: 4px;
+            }}
+
+            .btn-group {{ display: flex; gap: 12px; }}
+
+            .btn {{
+                border: none;
+                cursor: pointer;
+                border-radius: 50px;
+                padding: 10px 16px;
+                font-size: 0.9rem;
+                font-weight: 600;
+                transition: transform 0.2s ease;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+            }}
+
+            .btn-refresh {{ background: rgba(255, 255, 255, 0.1); color: white; }}
+            .btn-refresh:active {{ transform: scale(0.95); background: rgba(255,255,255,0.2); }}
+
+            .btn-nav {{ background: var(--accent-color); color: white; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3); }}
+            .btn-nav:active {{ transform: translateY(2px); }}
+
+             .status-bar {{
+                text-align: center;
+                font-size: 0.75rem;
+                color: rgba(255,255,255,0.5);
+                margin-top: 8px;
+            }}
+
+            /* List Container */
+            .container {{
+                max-width: 600px;
+                margin: 24px auto;
+                padding: 0 16px;
+            }}
+
+            .leaderboard-card {{
+                background: var(--card-bg);
+                border-radius: 16px;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+            }}
+
+            table {{
+                width: 100%;
+                border-collapse: collapse;
+            }}
+
+            th {{
+                text-align: left;
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: var(--text-muted);
+                padding: 16px 20px;
+                background-color: #f8fafc;
+                border-bottom: 1px solid #e2e8f0;
+            }}
             
-            .leaderboard-card {
-                background: var(--card-bg); border-radius: var(--radius); overflow: hidden;
-                box-shadow: var(--shadow); border: 1px solid rgba(0,0,0,0.03);
-            }
-            table { width: 100%; border-collapse: collapse; text-align: left; }
-            th {
-                background: #f8f9fa; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;
-                letter-spacing: 1px; padding: 15px; font-weight: 700; border-bottom: 2px solid #e9ecef;
-            }
-            td { padding: 15px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
-            tr:last-child td { border-bottom: none; }
+            td {{
+                padding: 16px 20px;
+                border-bottom: 1px solid #f1f5f9;
+                vertical-align: middle;
+            }}
+
+            tr:last-child td {{ border-bottom: none; }}
+
+            /* Columns */
+            .rank-col {{ width: 50px; text-align: center; font-weight: 800; color: var(--text-muted); font-size: 1.1rem; }}
+            .team-col {{ font-weight: 600; color: var(--text-main); font-size: 1.05rem; text-transform: capitalize; }}
+            .points-col {{ text-align: right; }}
+
+            .points-pill {{
+                background-color: var(--header-bg);
+                color: white;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-weight: 700;
+                font-size: 0.9rem;
+                font-family: 'Inter', monospace;
+            }}
+
+            /* Top 3 Styling */
+            .rank-1 {{ background: linear-gradient(to right, rgba(251, 191, 36, 0.1), transparent); }}
+            .rank-1 .rank-col {{ font-size: 1.8rem; text-shadow: 0 2px 0 rgba(0,0,0,0.1); }}
             
-            .rank-col { text-align: center; font-weight: 800; color: var(--primary-light); width: 50px; font-size: 1.1rem;}
-            .team-col { font-weight: 600; font-size: 1.05rem; }
-            .points-col { text-align: right; }
-            .points-badge {
-                background: var(--primary); color: var(--accent); padding: 6px 12px; border-radius: 20px;
-                font-weight: 700; font-family: 'SF Mono', 'Roboto Mono', monospace; font-size: 1rem;
-                box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
-            }
-            
-            /* Special styles for Top 3 */
-            .rank-1, .rank-2, .rank-3 { background-color: #ffffff; position: relative;}
-            .rank-1 .rank-col { font-size: 2.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-            .rank-2 .rank-col { font-size: 2rem; }
-            .rank-3 .rank-col { font-size: 1.6rem; }
-            
-            /* Subtle gradients for top 3 */
-            .rank-1 { background: linear-gradient(to right, rgba(255, 215, 0, 0.05), rgba(255,255,255,0)); border-left: 4px solid #FFD700; }
-            .rank-2 { background: linear-gradient(to right, rgba(192, 192, 192, 0.05), rgba(255,255,255,0)); border-left: 4px solid #C0C0C0; }
-            .rank-3 { background: linear-gradient(to right, rgba(205, 127, 50, 0.05), rgba(255,255,255,0)); border-left: 4px solid #CD7F32; }
-            
+            .rank-2 {{ background: linear-gradient(to right, rgba(226, 232, 240, 0.4), transparent); }}
+            .rank-2 .rank-col {{ font-size: 1.5rem; }}
+
+            .rank-3 {{ background: linear-gradient(to right, rgba(217, 119, 6, 0.1), transparent); }}
+            .rank-3 .rank-col {{ font-size: 1.3rem; }}
+
         </style>
     </head>
     <body>
         <div class="header">
-            <div class="header-content">
+            <div class="header-top">
                 <h1>
                     ESN Oslo Hunt
-                    <span class="subtitle">🏆 Leaderboard</span>
+                    <span>Leaderboard</span>
                 </h1>
-                <div class="nav-controls">
-                    <button class="btn-icon" onclick="window.location.reload()" title="Refresh">🔄</button>
-                    <a href="/events" class="btn-nav">📡 Live Feed</a>
+                <div class="btn-group">
+                    <button class="btn btn-refresh" onclick="window.location.reload();">🔄</button>
+                    <a href="/events" class="btn btn-nav">📡 Feed</a>
                 </div>
             </div>
+            <div class="status-bar">Last updated: {now_oslo}</div>
         </div>
 
         <div class="container">
             <div class="leaderboard-card">
                 <table>
                     <thead>
-                        <tr><th class="rank-col">#</th><th>TEAM</th><th class="points-col">POINTS</th></tr>
+                        <tr>
+                            <th class="rank-col">#</th>
+                            <th>Team</th>
+                            <th class="points-col">Score</th>
+                        </tr>
                     </thead>
                     <tbody>
     """
 
     if not sorted_leaderboard:
-         html += """<tr><td colspan="3" style="text-align:center; padding: 30px; color: #8898aa;">No scores recorded yet.</td></tr>"""
+         html += """<tr><td colspan="3" style="text-align:center; padding: 40px; color: #94a3b8;">No scores yet.</td></tr>"""
 
     for rank, (team, points) in enumerate(sorted_leaderboard, start=1):
         rank_display = str(rank)
         row_class = ""
         
+        # Formattazione nome team (es. "team1" -> "Team 1")
+        team_display = team.replace("team", "Team ").title()
+
         if rank == 1:
             rank_display = "🥇"
             row_class = "rank-1"
@@ -217,8 +305,8 @@ def leanderboard():
         html += f"""
                         <tr class="{row_class}">
                             <td class="rank-col">{rank_display}</td>
-                            <td class="team-col">{team.upper()}</td>
-                            <td class="points-col"><span class="points-badge">{int(points)}</span></td>
+                            <td class="team-col">{team_display}</td>
+                            <td class="points-col"><span class="points-pill">{int(points)}</span></td>
                         </tr>
         """
 
@@ -228,9 +316,9 @@ def leanderboard():
             </div>
         </div>
         <script>
-            // Auto-refresh every 30s
-            console.log("Auto-refresh active: 30s");
-            setTimeout(function(){ window.location.reload(1); }, 30000);
+            setTimeout(() => {
+                window.location.reload();
+            }, 30000);
         </script>
     </body>
     </html>
@@ -247,102 +335,243 @@ def events_feed():
     for station_name in allowedStations:
         collection = db[station_name]
         entries = list(collection.find({}, {"team": 1, "timestamp": 1, "_id": 0}))
+        
         for entry in entries:
             entry['station'] = station_name
             if 'timestamp' in entry:
                 ts = entry['timestamp']
-                if ts.tzinfo is None: ts = utc_tz.localize(ts)
+                if ts.tzinfo is None:
+                    ts = utc_tz.localize(ts)
                 entry['timestamp_oslo'] = ts.astimezone(oslo_tz)
                 all_events.append(entry)
-    all_events.sort(key=lambda x: x['timestamp_oslo'], reverse=True)
-    # --- END LOGIC ---
 
-    # --- NEW DESIGN (ENGLISH) ---
-    html = """
+    # Sort logic
+    all_events.sort(key=lambda x: x['timestamp_oslo'], reverse=True)
+    
+    # Get current time for "Last updated"
+    now_oslo = datetime.now(oslo_tz).strftime("%H:%M:%S")
+
+    # --- NEW DESIGN & FIXES ---
+    html = f"""
     <!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-        <title>Live Feed | ESN Oslo Treasure Hunt</title>
+        <meta http-equiv="refresh" content="30"> <title>Live Feed | ESN Oslo Treasure Hunt</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
         <style>
-            :root {
-                --primary: #0a2342; /* Deep Night Blue */
-                --primary-light: #1c3a63;
-                --accent: #ffab00; /* Vibrant Gold */
-                --accent-glow: rgba(255, 171, 0, 0.25);
-                --bg: #f4f6f9;
+            :root {{
+                --bg-color: #f0f4f8;
+                --header-bg: #0f172a; /* Nordic Night */
                 --card-bg: #ffffff;
-                --text-dark: #1a1a1a;
-                --text-muted: #6c757d;
-                --radius: 16px;
-                --shadow: 0 4px 20px rgba(0,0,0,0.08);
-            }
-            body {
-                font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                background-color: var(--bg); color: var(--text-dark); margin: 0; padding-bottom: 30px; -webkit-font-smoothing: antialiased;
-            }
-            .header {
-                background: linear-gradient(135deg, var(--primary), var(--primary-light));
-                color: white; padding: 15px 20px; position: sticky; top: 0; z-index: 100;
-                box-shadow: 0 4px 15px rgba(10, 35, 66, 0.3);
-                border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
-            }
-            .header-content { max-width: 600px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
-            .header h1 { margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: -0.5px; display: flex; flex-direction: column; line-height: 1.2;}
-            .header h1 span.subtitle { font-size: 0.8rem; font-weight: 400; opacity: 0.8; }
+                --text-main: #1e293b;
+                --text-secondary: #64748b;
+                --accent-color: #0ea5e9; /* Sky Blue */
+                --special-accent: #f59e0b; /* Amber/Gold */
+            }}
             
-            .nav-controls { display: flex; gap: 10px; align-items: center; }
-            .btn-icon {
-                background: rgba(255,255,255,0.15); border: none; color: white; width: 36px; height: 36px; border-radius: 50%;
-                font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
-            }
-            .btn-icon:active { transform: scale(0.9); background: rgba(255,255,255,0.3); }
-            .btn-nav {
-                background: var(--accent); color: var(--primary); border: none; padding: 8px 16px; border-radius: 30px;
-                font-weight: 700; font-size: 0.85rem; text-decoration: none; box-shadow: 0 4px 15px var(--accent-glow); transition: transform 0.2s;
-                display: flex; align-items: center; gap: 6px;
-            }
-            .btn-nav:active { transform: translateY(2px); }
+            body {{
+                font-family: 'Inter', sans-serif;
+                background-color: var(--bg-color);
+                color: var(--text-main);
+                margin: 0;
+                padding-bottom: 40px;
+                -webkit-font-smoothing: antialiased;
+            }}
+
+            /* Header Design */
+            .header {{
+                background-color: var(--header-bg);
+                color: white;
+                padding: 20px;
+                position: sticky;
+                top: 0;
+                z-index: 1000;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+                border-bottom-left-radius: 24px;
+                border-bottom-right-radius: 24px;
+            }}
+
+            .header-top {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                max-width: 600px;
+                margin: 0 auto;
+            }}
+
+            h1 {{
+                margin: 0;
+                font-size: 1.25rem;
+                font-weight: 800;
+                letter-spacing: -0.02em;
+                line-height: 1.2;
+            }}
             
-            .container { max-width: 600px; margin: 25px auto; padding: 0 15px; }
+            h1 span {{
+                display: block;
+                font-size: 0.85rem;
+                font-weight: 500;
+                opacity: 0.8;
+                margin-top: 4px;
+            }}
+
+            /* Buttons */
+            .btn-group {{
+                display: flex;
+                gap: 12px;
+            }}
+
+            .btn {{
+                border: none;
+                cursor: pointer;
+                border-radius: 50px;
+                padding: 10px 16px;
+                font-size: 0.9rem;
+                font-weight: 600;
+                transition: all 0.2s ease;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+            }}
+
+            .btn-refresh {{
+                background: rgba(255, 255, 255, 0.1);
+                color: white;
+                backdrop-filter: blur(5px);
+            }}
+
+            .btn-refresh:active {{
+                transform: scale(0.95);
+                background: rgba(255, 255, 255, 0.2);
+            }}
+
+            .btn-nav {{
+                background: var(--accent-color);
+                color: white;
+                box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+            }}
+
+            .btn-nav:active {{
+                transform: translateY(2px);
+            }}
+
+            /* Last Updated Indicator */
+            .status-bar {{
+                text-align: center;
+                font-size: 0.75rem;
+                color: rgba(255,255,255,0.5);
+                margin-top: 8px;
+            }}
+
+            /* Feed Container */
+            .container {{
+                max-width: 600px;
+                margin: 24px auto;
+                padding: 0 16px;
+            }}
+
+            /* Timeline Cards */
+            .feed-card {{
+                background: var(--card-bg);
+                border-radius: 16px;
+                padding: 20px;
+                margin-bottom: 16px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+                border: 1px solid rgba(255,255,255,0.5);
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                position: relative;
+                overflow: hidden;
+            }}
+
+            .feed-card::before {{
+                content: '';
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                width: 6px;
+                background-color: var(--accent-color);
+            }}
+
+            /* Special styling for Teo/Alex */
+            .feed-card.special::before {{
+                background-color: var(--special-accent);
+            }}
+
+            .card-header {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }}
+
+            .team-name {{
+                font-size: 1.1rem;
+                font-weight: 700;
+                color: var(--text-main);
+                text-transform: capitalize; /* Elegant capitalization */
+            }}
+
+            .timestamp {{
+                font-size: 0.8rem;
+                color: var(--text-secondary);
+                background: #f1f5f9;
+                padding: 4px 10px;
+                border-radius: 8px;
+                font-weight: 500;
+            }}
+
+            .card-body {{
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-size: 0.95rem;
+                color: var(--text-secondary);
+            }}
+
+            .station-badge {{
+                background-color: #e0f2fe;
+                color: #0369a1;
+                padding: 6px 12px;
+                border-radius: 8px;
+                font-family: 'Inter', monospace;
+                font-weight: 600;
+                font-size: 0.9rem;
+            }}
             
-            .timeline-card {
-                background: var(--card-bg); border-radius: var(--radius); padding: 18px; margin-bottom: 16px;
-                box-shadow: var(--shadow); position: relative; overflow: hidden; border: 1px solid rgba(0,0,0,0.03);
-            }
-            /* Colored side indicator */
-            .timeline-card::before {
-                content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--primary);
-            }
-            .timeline-card.special::before { background: #ff0055; /* Different color for Teo/Alex */ }
-            
-            .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-            .team-name { font-size: 1.15rem; font-weight: 800; color: var(--primary); margin: 0; }
-            .timestamp { font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; background: #f0f2f5; padding: 4px 8px; border-radius: 10px; font-weight: 500;}
-            
-            .card-body { display: flex; align-items: center; gap: 10px; }
-            .icon-marker { font-size: 1.4rem; }
-            .station-badge {
-                background: rgba(255, 171, 0, 0.1); color: #b37700; padding: 6px 12px; border-radius: 8px;
-                font-family: 'SF Mono', 'Roboto Mono', monospace; font-weight: 700; letter-spacing: 0.5px; border: 1px solid rgba(255, 171, 0, 0.2);
-            }
-            .empty-state { text-align: center; color: var(--text-muted); margin-top: 60px; }
-            .empty-icon { font-size: 4rem; margin-bottom: 20px; opacity: 0.5; }
+            .feed-card.special .station-badge {{
+                background-color: #fef3c7;
+                color: #b45309;
+            }}
+
+            .empty-state {{
+                text-align: center;
+                padding: 40px;
+                color: var(--text-secondary);
+            }}
         </style>
     </head>
     <body>
         <div class="header">
-            <div class="header-content">
+            <div class="header-top">
                 <h1>
                     ESN Oslo Hunt
-                    <span class="subtitle">📡 Live Feed</span>
+                    <span>Live Feed</span>
                 </h1>
-                <div class="nav-controls">
-                    <button class="btn-icon" onclick="window.location.reload()" title="Refresh">🔄</button>
-                    <a href="/leaderboard" class="btn-nav">🏆 Leaderboard</a>
+                <div class="btn-group">
+                    <button class="btn btn-refresh" onclick="window.location.reload();">
+                        🔄
+                    </button>
+                    <a href="/leaderboard" class="btn btn-nav">
+                        🏆 Rank
+                    </a>
                 </div>
             </div>
+            <div class="status-bar">Last updated: {now_oslo}</div>
         </div>
         
         <div class="container">
@@ -351,44 +580,13 @@ def events_feed():
     if not all_events:
         html += """
             <div class="empty-state">
-                <div class="empty-icon">💤</div>
-                <h3>All quiet... for now!</h3>
-                <p>Waiting for the first discoveries.</p>
+                <div style="font-size: 3rem; margin-bottom: 10px;">💤</div>
+                <h3>No activity yet</h3>
+                <p>The hunt hasn't started or no clues found yet.</p>
             </div>"""
     
     for event in all_events:
         time_str = event['timestamp_oslo'].strftime("%H:%M")
-        date_str = event['timestamp_oslo'].strftime("%d/%m")
-        team_name = event.get('team', 'Unknown').upper()
-        station_raw = event.get('station', 'Unknown')
-        
-        # Highlight logic for Teo/Alex
-        special_class = "special" if station_raw in ["Teo", "Alex"] else ""
-
-        html += f"""
-            <div class="timeline-card {special_class}">
-                <div class="card-header">
-                    <h2 class="team-name">{team_name}</h2>
-                    <span class="timestamp">🕒 {time_str} <small>({date_str})</small></span>
-                </div>
-                <div class="card-body">
-                    <span class="icon-marker">📍</span>
-                    <span>Unlocked: <span class="station-badge">{station_raw}</span></span>
-                </div>
-            </div>
-        """
-
-    html += """
-        </div>
-        <script>
-            // Auto-refresh every 30s
-            console.log("Auto-refresh active: 30s");
-            setTimeout(function(){ window.location.reload(1); }, 30000);
-        </script>
-    </body>
-    </html>
-    """
-    return html
 
 # Define a route for POST requests
 @app.route("/post", methods=["POST"])
