@@ -37,7 +37,19 @@
         <div class="absolute left-0 top-0 bottom-0 w-1 {% if event.is_special %}bg-amber-500{% else %}bg-blue-500{% endif %}"></div>
         
         <div class="pl-3">
-            <h3 class="font-bold text-gray-800 text-lg leading-tight">{{ event.team_display }}</h3>
+            <div class="flex items-center gap-2">
+                <h3 class="font-bold text-gray-800 text-lg leading-tight">{{ event.team_display }}</h3>
+                
+                {% if event.is_first %}
+                <span class="flex items-center gap-1 bg-yellow-100 text-yellow-700 border border-yellow-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.699-3.181a1 1 0 011.758 1.03L17.45 6.644A4 4 0 0115.178 12h-2.158a5.002 5.002 0 00-6.04 0H4.822a4 4 0 01-2.272-5.356L3.589 3.774a1 1 0 011.758-1.03L7.046 5.905 11 4.323V3a1 1 0 011-1zM3.316 13.9a6 6 0 0113.368 0h-13.368z" clip-rule="evenodd" />
+                    </svg>
+                    First!
+                </span>
+                {% endif %}
+            </div>
+
             <div class="flex items-center gap-2 mt-1">
                 <span class="text-xs font-mono font-semibold px-2 py-0.5 rounded {% if event.is_special %}bg-amber-100 text-amber-700{% else %}bg-blue-50 text-blue-700{% endif %}">
                     {{ event.station }}

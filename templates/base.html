@@ -9,11 +9,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #F3F4F6; }
-        /* Nasconde la scrollbar ma permette lo scroll */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .glass-nav {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             border-top: 1px solid rgba(0,0,0,0.05);
         }
@@ -21,21 +20,43 @@
 </head>
 <body class="text-gray-800 pb-24">
 
-    <header class="bg-slate-900 text-white pt-6 pb-10 px-6 rounded-b-[2.5rem] shadow-xl relative z-10">
+    <header class="bg-slate-900 text-white pt-6 pb-12 px-6 rounded-b-[2.5rem] shadow-xl relative z-10 transition-all duration-500 {% if not game_active %}border-b-4 border-red-500{% endif %}">
         <div class="flex justify-between items-center max-w-lg mx-auto">
             <div>
                 <h1 class="text-2xl font-extrabold tracking-tight">ESN Oslo Treasure Hunt</h1>
-                <p class="text-slate-400 text-sm font-medium">{% block subtitle %}Dashboard{% endblock %}</p>
+                <div class="flex items-center gap-2">
+                    <p class="text-slate-400 text-sm font-medium">{% block subtitle %}Dashboard{% endblock %}</p>
+                    {% if not game_active %}
+                    <span class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">PAUSED</span>
+                    {% endif %}
+                </div>
             </div>
-            <div class="bg-slate-800 p-2 rounded-full cursor-pointer hover:bg-slate-700 transition" onclick="window.location.reload()">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
+            
+            <div class="flex gap-3 items-center">
+                <form action="/admin/toggle_game" method="POST" class="m-0">
+                    <button type="submit" class="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg active:scale-95 border-2 {% if game_active %}bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500 hover:text-white{% else %}bg-green-500/20 border-green-500 text-green-400 hover:bg-green-500 hover:text-white{% endif %}">
+                        {% if game_active %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        {% else %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                            </svg>
+                        {% endif %}
+                    </button>
+                </form>
+
+                <div class="bg-slate-800 p-2 rounded-full cursor-pointer hover:bg-slate-700 transition" onclick="window.location.reload()">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </div>
             </div>
         </div>
     </header>
 
-    <main class="max-w-lg mx-auto px-4 -mt-6 relative z-20">
+    <main class="max-w-lg mx-auto px-4 -mt-8 relative z-20">
         {% block content %}{% endblock %}
     </main>
 
@@ -56,9 +77,7 @@
             </a>
         </div>
     </nav>
-
     <script>
-        // Auto refresh fallback
         setTimeout(() => window.location.reload(), 30000);
     </script>
 </body>
