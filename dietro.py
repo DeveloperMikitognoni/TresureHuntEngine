@@ -4,6 +4,7 @@ from pymongo import MongoClient
 from datetime import datetime
 from dotenv import load_dotenv
 import os
+import pytz
 
 # Load environment variables from .env file
 load_dotenv()
@@ -73,13 +74,12 @@ def leanderboard():
     leaderboard = {}
     stations = db.list_collection_names()
 
-    # --- LOGICA CALCOLO PUNTI (INVARIATA) ---
+    # --- LOGIC (UNCHANGED) ---
     for station in stations:
         collection = db[station]
         entries = list(collection.find({}).sort("timestamp", 1))
         num_teams = len(entries)
         if num_teams == 0: continue
-        
         bonus_points = round(120 / num_teams)
         for idx, entry in enumerate(entries):
             team = entry["team"]
@@ -87,102 +87,138 @@ def leanderboard():
             station_points = 20 + bonus_points
             if idx == 0: station_points *= 1.25
             leaderboard[team] += station_points
-
     sorted_leaderboard = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
+    # --- END LOGIC ---
 
-    # --- HTML ---
+    # --- NEW DESIGN (ENGLISH) ---
     html = """
     <!DOCTYPE html>
-    <html lang="it">
+    <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Classifica</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <title>Leaderboard | ESN Oslo Treasure Hunt</title>
         <style>
             :root {
-                --primary: #0056b3;
-                --accent: #ff9800;
-                --bg: #f0f2f5;
+                --primary: #0a2342;
+                --primary-light: #1c3a63;
+                --accent: #ffab00;
+                --accent-glow: rgba(255, 171, 0, 0.3);
+                --bg: #f4f6f9;
                 --card-bg: #ffffff;
-                --text: #333;
+                --text-dark: #1a1a1a;
+                --text-muted: #8898aa;
+                --radius: 18px;
+                --shadow: 0 4px 20px rgba(0,0,0,0.08);
             }
-            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; color: var(--text); }
-            
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                background-color: var(--bg); color: var(--text-dark); margin: 0; padding-bottom: 30px; -webkit-font-smoothing: antialiased;
+            }
             .header {
-                background-color: var(--primary);
-                color: white;
-                padding: 15px;
-                text-align: center;
-                position: sticky;
-                top: 0;
-                z-index: 1000;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                background: linear-gradient(135deg, var(--primary), var(--primary-light));
+                color: white; padding: 15px 20px; position: sticky; top: 0; z-index: 100;
+                box-shadow: 0 4px 15px rgba(10, 35, 66, 0.3);
+                border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
             }
-            .header h1 { margin: 0 0 10px 0; font-size: 1.4rem; }
+            .header-content { max-width: 600px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+            .header h1 { margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: -0.5px; display: flex; flex-direction: column; line-height: 1.2;}
+            .header h1 span.subtitle { font-size: 0.8rem; font-weight: 400; opacity: 0.8; }
             
-            .nav-row {
-                display: flex;
-                justify-content: center;
-                gap: 10px;
+            .nav-controls { display: flex; gap: 10px; align-items: center; }
+            .btn-icon {
+                background: rgba(255,255,255,0.15); border: none; color: white; width: 36px; height: 36px; border-radius: 50%;
+                font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
             }
-            .btn {
-                padding: 6px 14px;
-                border-radius: 20px;
-                text-decoration: none;
-                font-weight: 600;
-                font-size: 0.9rem;
-                border: none;
-                cursor: pointer;
-                transition: transform 0.1s;
+            .btn-icon:active { transform: scale(0.9); background: rgba(255,255,255,0.3); }
+            .btn-nav {
+                background: var(--accent); color: var(--primary); border: none; padding: 8px 16px; border-radius: 30px;
+                font-weight: 700; font-size: 0.85rem; text-decoration: none; box-shadow: 0 4px 15px var(--accent-glow); transition: transform 0.2s;
+                display: flex; align-items: center; gap: 6px;
             }
-            .btn:active { transform: scale(0.95); }
+            .btn-nav:active { transform: translateY(2px); }
             
-            .btn-refresh { background: rgba(255,255,255,0.2); color: white; }
-            .btn-link { background: var(--accent); color: white; }
-
-            .container { max-width: 600px; margin: 20px auto; padding: 0 15px; }
-            .card { background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden; }
+            .container { max-width: 600px; margin: 25px auto; padding: 0 15px; }
+            
+            .leaderboard-card {
+                background: var(--card-bg); border-radius: var(--radius); overflow: hidden;
+                box-shadow: var(--shadow); border: 1px solid rgba(0,0,0,0.03);
+            }
             table { width: 100%; border-collapse: collapse; text-align: left; }
-            th { background: #e9ecef; color: #666; font-size: 0.85rem; padding: 12px 15px; }
-            td { padding: 15px; border-bottom: 1px solid #f0f0f0; }
-            .rank-col { text-align: center; font-weight: bold; color: var(--primary); width: 50px; }
-            .points-col { text-align: right; font-weight: bold; color: var(--accent); font-family: monospace; font-size: 1.1rem; }
+            th {
+                background: #f8f9fa; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;
+                letter-spacing: 1px; padding: 15px; font-weight: 700; border-bottom: 2px solid #e9ecef;
+            }
+            td { padding: 15px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+            tr:last-child td { border-bottom: none; }
             
-            /* Primi 3 posti */
-            tr:nth-child(1) .rank-col { font-size: 1.5rem; }
-            tr:nth-child(2) .rank-col { font-size: 1.3rem; }
-            tr:nth-child(3) .rank-col { font-size: 1.1rem; }
+            .rank-col { text-align: center; font-weight: 800; color: var(--primary-light); width: 50px; font-size: 1.1rem;}
+            .team-col { font-weight: 600; font-size: 1.05rem; }
+            .points-col { text-align: right; }
+            .points-badge {
+                background: var(--primary); color: var(--accent); padding: 6px 12px; border-radius: 20px;
+                font-weight: 700; font-family: 'SF Mono', 'Roboto Mono', monospace; font-size: 1rem;
+                box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+            }
+            
+            /* Special styles for Top 3 */
+            .rank-1, .rank-2, .rank-3 { background-color: #ffffff; position: relative;}
+            .rank-1 .rank-col { font-size: 2.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            .rank-2 .rank-col { font-size: 2rem; }
+            .rank-3 .rank-col { font-size: 1.6rem; }
+            
+            /* Subtle gradients for top 3 */
+            .rank-1 { background: linear-gradient(to right, rgba(255, 215, 0, 0.05), rgba(255,255,255,0)); border-left: 4px solid #FFD700; }
+            .rank-2 { background: linear-gradient(to right, rgba(192, 192, 192, 0.05), rgba(255,255,255,0)); border-left: 4px solid #C0C0C0; }
+            .rank-3 { background: linear-gradient(to right, rgba(205, 127, 50, 0.05), rgba(255,255,255,0)); border-left: 4px solid #CD7F32; }
+            
         </style>
     </head>
     <body>
         <div class="header">
-            <h1>🏆 Classifica</h1>
-            <div class="nav-row">
-                <button class="btn btn-refresh" onclick="window.location.reload()">🔄 Aggiorna</button>
-                <a href="/events" class="btn btn-link">📡 Vedi Feed</a>
+            <div class="header-content">
+                <h1>
+                    ESN Oslo Hunt
+                    <span class="subtitle">🏆 Leaderboard</span>
+                </h1>
+                <div class="nav-controls">
+                    <button class="btn-icon" onclick="window.location.reload()" title="Refresh">🔄</button>
+                    <a href="/events" class="btn-nav">📡 Live Feed</a>
+                </div>
             </div>
         </div>
 
         <div class="container">
-            <div class="card">
+            <div class="leaderboard-card">
                 <table>
                     <thead>
-                        <tr><th class="rank-col">#</th><th>Team</th><th class="points-col">Pt</th></tr>
+                        <tr><th class="rank-col">#</th><th>TEAM</th><th class="points-col">POINTS</th></tr>
                     </thead>
                     <tbody>
     """
 
+    if not sorted_leaderboard:
+         html += """<tr><td colspan="3" style="text-align:center; padding: 30px; color: #8898aa;">No scores recorded yet.</td></tr>"""
+
     for rank, (team, points) in enumerate(sorted_leaderboard, start=1):
         rank_display = str(rank)
-        if rank == 1: rank_display = "🥇"
-        elif rank == 2: rank_display = "🥈"
-        elif rank == 3: rank_display = "🥉"
+        row_class = ""
+        
+        if rank == 1:
+            rank_display = "🥇"
+            row_class = "rank-1"
+        elif rank == 2:
+            rank_display = "🥈"
+            row_class = "rank-2"
+        elif rank == 3:
+            rank_display = "🥉"
+            row_class = "rank-3"
 
         html += f"""
-                        <tr>
+                        <tr class="{row_class}">
                             <td class="rank-col">{rank_display}</td>
-                            <td>{team}</td>
-                            <td class="points-col">{int(points)}</td>
+                            <td class="team-col">{team.upper()}</td>
+                            <td class="points-col"><span class="points-badge">{int(points)}</span></td>
                         </tr>
         """
 
@@ -191,7 +227,11 @@ def leanderboard():
                 </table>
             </div>
         </div>
-        <script>setTimeout(function(){ window.location.reload(1); }, 30000);</script>
+        <script>
+            // Auto-refresh every 30s
+            console.log("Auto-refresh active: 30s");
+            setTimeout(function(){ window.location.reload(1); }, 30000);
+        </script>
     </body>
     </html>
     """
@@ -200,101 +240,108 @@ def leanderboard():
 @app.route("/events", methods=["GET"])
 def events_feed():
     all_events = []
-    
-    # Definisci i fusi orari
     utc_tz = pytz.utc
     oslo_tz = pytz.timezone('Europe/Oslo')
 
-    # 1. Recupera i dati
+    # --- LOGIC (UNCHANGED) ---
     for station_name in allowedStations:
         collection = db[station_name]
         entries = list(collection.find({}, {"team": 1, "timestamp": 1, "_id": 0}))
-        
         for entry in entries:
             entry['station'] = station_name
             if 'timestamp' in entry:
                 ts = entry['timestamp']
-                if ts.tzinfo is None:
-                    ts = utc_tz.localize(ts)
+                if ts.tzinfo is None: ts = utc_tz.localize(ts)
                 entry['timestamp_oslo'] = ts.astimezone(oslo_tz)
                 all_events.append(entry)
-
-    # 2. Ordina
     all_events.sort(key=lambda x: x['timestamp_oslo'], reverse=True)
+    # --- END LOGIC ---
 
-    # 3. HTML
+    # --- NEW DESIGN (ENGLISH) ---
     html = """
     <!DOCTYPE html>
-    <html lang="it">
+    <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Live Feed</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <title>Live Feed | ESN Oslo Treasure Hunt</title>
         <style>
             :root {
-                --primary: #0056b3;
-                --accent: #ff9800;
-                --bg: #f0f2f5;
+                --primary: #0a2342; /* Deep Night Blue */
+                --primary-light: #1c3a63;
+                --accent: #ffab00; /* Vibrant Gold */
+                --accent-glow: rgba(255, 171, 0, 0.25);
+                --bg: #f4f6f9;
                 --card-bg: #ffffff;
-                --text: #333;
-                --subtext: #666;
+                --text-dark: #1a1a1a;
+                --text-muted: #6c757d;
+                --radius: 16px;
+                --shadow: 0 4px 20px rgba(0,0,0,0.08);
             }
-            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; color: var(--text); }
-            
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                background-color: var(--bg); color: var(--text-dark); margin: 0; padding-bottom: 30px; -webkit-font-smoothing: antialiased;
+            }
             .header {
-                background-color: var(--primary);
-                color: white;
-                padding: 15px;
-                text-align: center;
-                position: sticky;
-                top: 0;
-                z-index: 1000;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                background: linear-gradient(135deg, var(--primary), var(--primary-light));
+                color: white; padding: 15px 20px; position: sticky; top: 0; z-index: 100;
+                box-shadow: 0 4px 15px rgba(10, 35, 66, 0.3);
+                border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
             }
-            .header h1 { margin: 0 0 10px 0; font-size: 1.2rem; }
+            .header-content { max-width: 600px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+            .header h1 { margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: -0.5px; display: flex; flex-direction: column; line-height: 1.2;}
+            .header h1 span.subtitle { font-size: 0.8rem; font-weight: 400; opacity: 0.8; }
             
-            .nav-row {
-                display: flex;
-                justify-content: center;
-                gap: 10px;
+            .nav-controls { display: flex; gap: 10px; align-items: center; }
+            .btn-icon {
+                background: rgba(255,255,255,0.15); border: none; color: white; width: 36px; height: 36px; border-radius: 50%;
+                font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
             }
-            .btn {
-                padding: 6px 14px;
-                border-radius: 20px;
-                text-decoration: none;
-                font-weight: 600;
-                font-size: 0.9rem;
-                border: none;
-                cursor: pointer;
-                transition: transform 0.1s;
+            .btn-icon:active { transform: scale(0.9); background: rgba(255,255,255,0.3); }
+            .btn-nav {
+                background: var(--accent); color: var(--primary); border: none; padding: 8px 16px; border-radius: 30px;
+                font-weight: 700; font-size: 0.85rem; text-decoration: none; box-shadow: 0 4px 15px var(--accent-glow); transition: transform 0.2s;
+                display: flex; align-items: center; gap: 6px;
             }
-            .btn:active { transform: scale(0.95); }
+            .btn-nav:active { transform: translateY(2px); }
             
-            .btn-refresh { background: rgba(255,255,255,0.2); color: white; }
-            .btn-link { background: var(--accent); color: white; }
-
-            .container { max-width: 600px; margin: 0 auto; padding: 20px 15px; }
-            .timeline-item {
-                background: var(--card-bg);
-                border-radius: 12px;
-                padding: 15px;
-                margin-bottom: 15px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-                border-left: 5px solid var(--primary);
+            .container { max-width: 600px; margin: 25px auto; padding: 0 15px; }
+            
+            .timeline-card {
+                background: var(--card-bg); border-radius: var(--radius); padding: 18px; margin-bottom: 16px;
+                box-shadow: var(--shadow); position: relative; overflow: hidden; border: 1px solid rgba(0,0,0,0.03);
             }
-            .meta-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
-            .time { font-size: 0.85rem; color: var(--subtext); background: #eee; padding: 4px 8px; border-radius: 6px; }
-            .team { font-weight: bold; color: var(--primary); }
-            .station-code { font-family: monospace; background: #fff3cd; padding: 2px 6px; border-radius: 4px; color: #856404; }
-            .empty-state { text-align: center; color: var(--subtext); margin-top: 50px; }
+            /* Colored side indicator */
+            .timeline-card::before {
+                content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--primary);
+            }
+            .timeline-card.special::before { background: #ff0055; /* Different color for Teo/Alex */ }
+            
+            .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+            .team-name { font-size: 1.15rem; font-weight: 800; color: var(--primary); margin: 0; }
+            .timestamp { font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; background: #f0f2f5; padding: 4px 8px; border-radius: 10px; font-weight: 500;}
+            
+            .card-body { display: flex; align-items: center; gap: 10px; }
+            .icon-marker { font-size: 1.4rem; }
+            .station-badge {
+                background: rgba(255, 171, 0, 0.1); color: #b37700; padding: 6px 12px; border-radius: 8px;
+                font-family: 'SF Mono', 'Roboto Mono', monospace; font-weight: 700; letter-spacing: 0.5px; border: 1px solid rgba(255, 171, 0, 0.2);
+            }
+            .empty-state { text-align: center; color: var(--text-muted); margin-top: 60px; }
+            .empty-icon { font-size: 4rem; margin-bottom: 20px; opacity: 0.5; }
         </style>
     </head>
     <body>
         <div class="header">
-            <h1>📡 Live Feed</h1>
-            <div class="nav-row">
-                <button class="btn btn-refresh" onclick="window.location.reload()">🔄 Aggiorna</button>
-                <a href="/leaderboard" class="btn btn-link">🏆 Classifica</a>
+            <div class="header-content">
+                <h1>
+                    ESN Oslo Hunt
+                    <span class="subtitle">📡 Live Feed</span>
+                </h1>
+                <div class="nav-controls">
+                    <button class="btn-icon" onclick="window.location.reload()" title="Refresh">🔄</button>
+                    <a href="/leaderboard" class="btn-nav">🏆 Leaderboard</a>
+                </div>
             </div>
         </div>
         
@@ -302,28 +349,42 @@ def events_feed():
     """
 
     if not all_events:
-        html += """<div class="empty-state"><h3>Nessun evento!</h3></div>"""
+        html += """
+            <div class="empty-state">
+                <div class="empty-icon">💤</div>
+                <h3>All quiet... for now!</h3>
+                <p>Waiting for the first discoveries.</p>
+            </div>"""
     
     for event in all_events:
-        time_str = event['timestamp_oslo'].strftime("%H:%M:%S")
-        date_str = event['timestamp_oslo'].strftime("%d %b")
-        team_name = event.get('team', 'Unknown')
+        time_str = event['timestamp_oslo'].strftime("%H:%M")
+        date_str = event['timestamp_oslo'].strftime("%d/%m")
+        team_name = event.get('team', 'Unknown').upper()
         station_raw = event.get('station', 'Unknown')
-        border_color = "var(--accent)" if station_raw in ["Teo", "Alex"] else "var(--primary)"
+        
+        # Highlight logic for Teo/Alex
+        special_class = "special" if station_raw in ["Teo", "Alex"] else ""
 
         html += f"""
-            <div class="timeline-item" style="border-left-color: {border_color};">
-                <div class="meta-row">
-                    <span class="team">{team_name}</span>
-                    <span class="time">{time_str} <small>({date_str})</small></span>
+            <div class="timeline-card {special_class}">
+                <div class="card-header">
+                    <h2 class="team-name">{team_name}</h2>
+                    <span class="timestamp">🕒 {time_str} <small>({date_str})</small></span>
                 </div>
-                <div>📍 Ha trovato: <span class="station-code">{station_raw}</span></div>
+                <div class="card-body">
+                    <span class="icon-marker">📍</span>
+                    <span>Unlocked: <span class="station-badge">{station_raw}</span></span>
+                </div>
             </div>
         """
 
     html += """
         </div>
-        <script>setTimeout(function(){ window.location.reload(1); }, 30000);</script>
+        <script>
+            // Auto-refresh every 30s
+            console.log("Auto-refresh active: 30s");
+            setTimeout(function(){ window.location.reload(1); }, 30000);
+        </script>
     </body>
     </html>
     """
