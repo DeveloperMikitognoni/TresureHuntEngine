@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="refresh" content="30">
+    <title>ESN Oslo Hunt</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F3F4F6; }
+        /* Nasconde la scrollbar ma permette lo scroll */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body class="text-gray-800 pb-24">
+
+    <header class="bg-slate-900 text-white pt-6 pb-10 px-6 rounded-b-[2.5rem] shadow-xl relative z-10">
+        <div class="flex justify-between items-center max-w-lg mx-auto">
+            <div>
+                <h1 class="text-2xl font-extrabold tracking-tight">ESN Oslo Hunt</h1>
+                <p class="text-slate-400 text-sm font-medium">{% block subtitle %}Dashboard{% endblock %}</p>
+            </div>
+            <div class="bg-slate-800 p-2 rounded-full cursor-pointer hover:bg-slate-700 transition" onclick="window.location.reload()">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-lg mx-auto px-4 -mt-6 relative z-20">
+        {% block content %}{% endblock %}
+    </main>
+
+    <nav class="fixed bottom-0 w-full glass-nav z-50 safe-area-pb">
+        <div class="max-w-lg mx-auto flex justify-around items-center h-16">
+            <a href="/events" class="flex flex-col items-center justify-center w-full h-full space-y-1 {% if request.path == '/events' %}text-blue-600{% else %}text-gray-400{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span class="text-[10px] font-bold uppercase tracking-wider">Live Feed</span>
+            </a>
+            
+            <a href="/leaderboard" class="flex flex-col items-center justify-center w-full h-full space-y-1 {% if request.path == '/leaderboard' %}text-blue-600{% else %}text-gray-400{% endif %}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <span class="text-[10px] font-bold uppercase tracking-wider">Ranking</span>
+            </a>
+        </div>
+    </nav>
+
+    <script>
+        // Auto refresh fallback
+        setTimeout(() => window.location.reload(), 30000);
+    </script>
+</body>
+</html>

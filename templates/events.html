@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block subtitle %}Live Activity Feed{% endblock %}
+
+{% block content %}
+<div class="bg-white p-4 rounded-2xl shadow-lg border border-gray-100 mb-6">
+    <div class="flex gap-3">
+        <select id="teamFilter" onchange="applyFilters()" class="w-1/2 bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none font-medium">
+            <option value="all">All Teams</option>
+            {% for t in teams %}
+            <option value="{{ t }}" {% if sel_team == t %}selected{% endif %}>{{ t|replace('team', 'Team ')|title }}</option>
+            {% endfor %}
+        </select>
+        
+        <select id="stationFilter" onchange="applyFilters()" class="w-1/2 bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none font-medium">
+            <option value="all">All Clues</option>
+            {% for s in stations %}
+            <option value="{{ s }}" {% if sel_station == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="text-center mt-3 text-xs text-gray-400 font-medium">
+        Showing {{ count }} events
+    </div>
+</div>
+
+<div class="space-y-4">
+    {% if events|length == 0 %}
+    <div class="text-center py-10">
+        <div class="text-5xl mb-3 opacity-20">💤</div>
+        <p class="text-gray-400 font-medium">No activity found.</p>
+    </div>
+    {% endif %}
+
+    {% for event in events %}
+    <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center justify-between relative overflow-hidden group">
+        <div class="absolute left-0 top-0 bottom-0 w-1 {% if event.is_special %}bg-amber-500{% else %}bg-blue-500{% endif %}"></div>
+        
+        <div class="pl-3">
+            <h3 class="font-bold text-gray-800 text-lg leading-tight">{{ event.team_display }}</h3>
+            <div class="flex items-center gap-2 mt-1">
+                <span class="text-xs font-mono font-semibold px-2 py-0.5 rounded {% if event.is_special %}bg-amber-100 text-amber-700{% else %}bg-blue-50 text-blue-700{% endif %}">
+                    {{ event.station }}
+                </span>
+            </div>
+        </div>
+        
+        <div class="text-right">
+            <span class="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-md">{{ event.time }}</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    function applyFilters() {
+        const team = document.getElementById('teamFilter').value;
+        const station = document.getElementById('stationFilter').value;
+        const url = new URL(window.location.href);
+        if (team !== 'all') url.searchParams.set('team', team); else url.searchParams.delete('team');
+        if (station !== 'all') url.searchParams.set('station', station); else url.searchParams.delete('station');
+        window.location.href = url.toString();
+    }
+</script>
+{% endblock %}
