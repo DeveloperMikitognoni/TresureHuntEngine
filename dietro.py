@@ -31,10 +31,25 @@ db = client["TreasureHuntDB"]  # Database namet
 
 # Create a list of strings
 
-#allowedStations = [f"station{i}" for i in range(1,8)] + ["Teo"]
-#allowedTeams = [f"team{i}" for i in range(1,50)]
-allowedStations = []
-allowedTeams = []
+const allowedStations = [
+    "clue1-7K9P2L5N6Q3W",
+    "clue2-R4T9YU2I6O1S",
+    "clue3-F9G3HJ7K2LZ4",
+    "clue4-X8CV6B1NM3Q9",
+    "clue5-W5E1R3Y7U2I9",
+    "clue6-O4P8AS1D7FG5",
+    "clue7-H9JK3L1ZX7C2",
+    "clue8-V9N4MQ2W8ER6",
+    "clue9-T1YU5I9OP3S7",
+    "clue10-D8G2HJ4K6LZ1",
+    "clue11-X9CV5B3NM2Q8",
+    "clue12-W7R4TY9U1IO3",
+    "Teo",
+    "Alex"
+];
+allowedTeams = [f"team{i}" for i in range(1,100)]
+#allowedStations = []
+#allowedTeams = []
 
 
 app = Flask(__name__)
