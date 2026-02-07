@@ -31,7 +31,7 @@ db = client["TreasureHuntDB"]  # Database namet
 
 # Create a list of strings
 
-const allowedStations = [
+allowedStations = [
     "clue1-7K9P2L5N6Q3W",
     "clue2-R4T9YU2I6O1S",
     "clue3-F9G3HJ7K2LZ4",
