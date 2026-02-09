@@ -94,8 +94,12 @@ def toggle_game():
 # --- ROTTE STANDARD ---
 
 @app.route("/", methods=["GET"])
-def home():
-    return redirect("https://scannerfuuun.vercel.app", code=302)
+def scanner_page():
+    # Passiamo la lista dei team per il menu a tendina iniziale
+    # (allowedTeams è già definita in alto nel tuo file)
+    teams_list = sorted(allowedTeams, key=lambda x: int(x.replace("team", "")))
+    
+    return render_template("scanner.html", teams=teams_list)
 
 @app.route("/events", methods=["GET"])
 def events_feed():

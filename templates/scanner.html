@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block subtitle %}QR Scanner{% endblock %}
+
+{% block content %}
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+
+<div id="teamModal" class="fixed inset-0 bg-slate-900/95 z-[60] flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl border border-gray-200">
+        <div class="mb-4">
+            <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-2xl">
+                👋
+            </div>
+        </div>
+        <h2 class="text-xl font-bold text-gray-800 mb-2">Welcome, Hunter!</h2>
+        <p class="text-gray-500 text-sm mb-6">Select your team to start scanning clues.</p>
+        
+        <select id="teamSelector" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-lg font-bold text-gray-700 mb-4 focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="" disabled selected>Choose your Team...</option>
+            {% for team in teams %}
+            <option value="{{ team }}">Team {{ team.replace('team', '') }}</option>
+            {% endfor %}
+        </select>
+        
+        <button onclick="saveTeam()" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-slate-800 transition active:scale-95 disabled:opacity-50" id="saveBtn" disabled>
+            Start Hunting 🚀
+        </button>
+    </div>
+</div>
+
+<div class="flex flex-col items-center justify-center min-h-[60vh] relative">
+    
+    <div id="currentTeamDisplay" class="mb-4 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm border border-white/50 text-sm font-semibold text-gray-600 flex items-center gap-2" onclick="resetTeam()">
+        <span id="teamNameDisplay">...</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+        </svg>
+    </div>
+
+    <div class="w-full max-w-sm bg-black rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-900 relative aspect-square">
+        <div id="reader" class="w-full h-full object-cover"></div>
+        
+        <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
+            <div class="w-64 h-64 border-2 border-white/30 rounded-xl relative">
+                <div class="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-blue-400 rounded-tl-lg -mt-1 -ml-1"></div>
+                <div class="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-blue-400 rounded-tr-lg -mt-1 -mr-1"></div>
+                <div class="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-blue-400 rounded-bl-lg -mb-1 -ml-1"></div>
+                <div class="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-blue-400 rounded-br-lg -mb-1 -mr-1"></div>
+            </div>
+        </div>
+
+        <div class="absolute bottom-4 left-0 right-0 text-center">
+            <span class="bg-black/50 text-white text-xs px-3 py-1 rounded-full backdrop-blur-md">Camera Active</span>
+        </div>
+    </div>
+
+    <div id="statusMessage" class="mt-6 w-full max-w-sm hidden transition-all duration-300 transform">
+        </div>
+
+</div>
+
+<style>
+    /* Nasconde il pulsante stop di html5-qrcode che è brutto */
+    #html5-qrcode-button-camera-stop { display: none !important; }
+    /* Fix per il video che deve riempire il div */
+    #reader video { object-fit: cover; width: 100% !important; height: 100% !important; border-radius: 1.5rem; }
+</style>
+
+<script>
+    // --- 1. GESTIONE TEAM ---
+    let currentTeam = localStorage.getItem('myTeam');
+
+    function initTeam() {
+        const modal = document.getElementById('teamModal');
+        const display = document.getElementById('teamNameDisplay');
+        
+        if (!currentTeam) {
+            modal.classList.remove('hidden'); // Mostra selezione
+        } else {
+            modal.classList.add('hidden');
+            display.innerText = currentTeam.replace('team', 'Team ');
+            startScanner(); // Avvia scanner solo se abbiamo un team
+        }
+    }
+
+    // Abilita bottone salva solo se selezionato
+    document.getElementById('teamSelector').addEventListener('change', function() {
+        document.getElementById('saveBtn').disabled = false;
+    });
+
+    function saveTeam() {
+        const selector = document.getElementById('teamSelector');
+        const selected = selector.value;
+        if (selected) {
+            localStorage.setItem('myTeam', selected);
+            currentTeam = selected;
+            initTeam();
+        }
+    }
+
+    function resetTeam() {
+        if(confirm("Change team?")) {
+            localStorage.removeItem('myTeam');
+            location.reload();
+        }
+    }
+
+    // --- 2. GESTIONE SCANNER ---
+    let html5QrcodeScanner;
+    let isScanning = true;
+    
+    // Suono beep
+    const beep = new Howl({
+        src: ['https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'], // Suono breve
+        volume: 0.5
+    });
+
+    const errorBeep = new Howl({
+        src: ['https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3'], // Suono errore
+        volume: 0.5
+    });
+
+    function startScanner() {
+        html5QrcodeScanner = new Html5Qrcode("reader");
+        
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        
+        html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
+        .catch(err => {
+            console.error("Error starting camera", err);
+            showStatus("error", "Camera access denied. Please allow permissions.");
+        });
+    }
+
+    // Per evitare scansioni multiple rapidissime
+    let lastScanTime = 0;
+    const SCAN_COOLDOWN = 3000; // 3 secondi tra una scansione e l'altra
+
+    function onScanSuccess(decodedText, decodedResult) {
+        const now = Date.now();
+        if (now - lastScanTime < SCAN_COOLDOWN) return;
+        lastScanTime = now;
+
+        // Pulizia del testo scansionato (se per caso il QR è un URL completo o ha spazi)
+        // Accetta: "clue1-XXXX" oppure "https://.../clue1-XXXX/..."
+        let stationId = decodedText;
+        
+        // Se è un URL, proviamo a estrarre l'ID (assumendo che l'ID non contenga slash)
+        // Ma dato che hai generato tu i codici come stringhe pure, usiamo decodedText.
+        // Se il QR contiene "clue1-code", va bene così.
+        
+        console.log(`Scanned: ${stationId} for ${currentTeam}`);
+        
+        sendData(stationId, currentTeam);
+    }
+
+    // --- 3. INVIO DATI AL SERVER ---
+    async function sendData(station, team) {
+        showStatus("loading", "Verifying clue...");
+        
+        try {
+            // Chiamata all'API che abbiamo creato in app.py
+            const response = await fetch(`/${station}/${team}`);
+            const data = await response.json();
+
+            if (response.ok && (data.status === "success" || data.status === "warning")) {
+                beep.play();
+                const isWarning = data.status === "warning";
+                showStatus(isWarning ? "warning" : "success", data.message, data.station);
+            } else {
+                errorBeep.play();
+                // Se il gioco è in pausa o codice errato
+                showStatus("error", data.message || "Invalid Code");
+            }
+
+        } catch (error) {
+            console.error(error);
+            errorBeep.play();
+            showStatus("error", "Network Error. Check connection.");
+        }
+    }
+
+    // --- 4. UI FEEDBACK ---
+    function showStatus(type, message, subtext = "") {
+        const el = document.getElementById('statusMessage');
+        el.classList.remove('hidden');
+        
+        let bgColor, textColor, icon;
+
+        if (type === 'success') {
+            bgColor = 'bg-green-100 border-green-200';
+            textColor = 'text-green-800';
+            icon = '🎉';
+        } else if (type === 'warning') {
+            bgColor = 'bg-yellow-50 border-yellow-200';
+            textColor = 'text-yellow-800';
+            icon = '⚠️';
+        } else if (type === 'error') {
+            bgColor = 'bg-red-50 border-red-200';
+            textColor = 'text-red-800';
+            icon = '⛔';
+        } else { // Loading
+            bgColor = 'bg-blue-50 border-blue-200';
+            textColor = 'text-blue-800';
+            icon = '⏳';
+        }
+
+        el.className = `mt-6 w-full max-w-sm p-4 rounded-xl border ${bgColor} shadow-sm text-center transform transition-all animate-bounce-short`;
+        
+        el.innerHTML = `
+            <div class="text-2xl mb-1">${icon}</div>
+            <div class="font-bold ${textColor}">${message}</div>
+            ${subtext ? `<div class="text-xs opacity-70 ${textColor} mt-1 font-mono">${subtext}</div>` : ''}
+        `;
+
+        // Se non è loading, nascondi dopo 4 secondi
+        if (type !== 'loading') {
+            setTimeout(() => {
+                el.classList.add('hidden');
+            }, 4000);
+        }
+    }
+
+    // Avvio iniziale
+    window.onload = initTeam;
+
+</script>
+
+<style>
+    @keyframes bounce-short {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+    .animate-bounce-short {
+        animation: bounce-short 0.3s ease-in-out;
+    }
+</style>
+{% endblock %}
