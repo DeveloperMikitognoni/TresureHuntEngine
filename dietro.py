@@ -94,12 +94,16 @@ def toggle_game():
 # --- ROTTE STANDARD ---
 
 @app.route("/", methods=["GET"])
-def scanner_page():
-    # Passiamo la lista dei team per il menu a tendina iniziale
-    # (allowedTeams è già definita in alto nel tuo file)
+def home():
+    """Landing page: Selezione del Team."""
+    # Ordina i team in modo numerico (1, 2, ... 10, non 1, 10, 100)
     teams_list = sorted(allowedTeams, key=lambda x: int(x.replace("team", "")))
-    
-    return render_template("scanner.html", teams=teams_list)
+    return render_template("index.html", teams=teams_list)
+
+@app.route("/scanner", methods=["GET"])
+def scanner_page():
+    """Pagina dello Scanner vero e proprio."""
+    return render_template("scanner.html")
 
 @app.route("/events", methods=["GET"])
 def events_feed():

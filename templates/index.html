@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block subtitle %}Welcome Hunter{% endblock %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center pt-8 px-4">
+    
+    <div class="w-24 h-24 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-6 shadow-inner animate-pulse">
+        <span class="text-4xl">🕵️‍♂️</span>
+    </div>
+
+    <h1 class="text-3xl font-extrabold text-slate-900 mb-2">ESN Oslo Hunt</h1>
+    <p class="text-gray-500 text-center mb-8 max-w-xs">
+        Ready to explore the city? Select your team ID to start checking in clues.
+    </p>
+
+    <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-sm border border-gray-100">
+        
+        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Select Team</label>
+        <div class="relative">
+            <select id="teamSelector" class="w-full appearance-none bg-gray-50 border border-gray-200 text-gray-700 py-3 px-4 pr-8 rounded-xl leading-tight focus:outline-none focus:bg-white focus:border-blue-500 font-bold text-lg">
+                <option value="" disabled selected>Choose...</option>
+                {% for team in teams %}
+                <option value="{{ team }}">Team {{ team.replace('team', '') }}</option>
+                {% endfor %}
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+            </div>
+        </div>
+
+        <button onclick="saveAndStart()" id="startBtn" class="mt-6 w-full bg-slate-900 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-slate-800 transition transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+            Start Hunting 🚀
+        </button>
+    </div>
+
+    <div class="mt-8 bg-blue-50 text-blue-800 p-4 rounded-xl text-sm flex gap-3 items-start max-w-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+        </svg>
+        <p>Your team selection will be saved on this device. You won't need to select it again.</p>
+    </div>
+</div>
+
+<script>
+    const selector = document.getElementById('teamSelector');
+    const btn = document.getElementById('startBtn');
+    
+    // Controlla se c'è già un team salvato
+    const savedTeam = localStorage.getItem('myTeam');
+    if (savedTeam) {
+        selector.value = savedTeam;
+        btn.innerText = `Continue as Team ${savedTeam.replace('team', '')} ▶`;
+        btn.disabled = false;
+        // Opzionale: redirect automatico veloce se vuoi
+        // window.location.href = '/scanner'; 
+    }
+
+    selector.addEventListener('change', function() {
+        if(this.value) {
+            btn.disabled = false;
+            btn.innerText = "Start Hunting 🚀";
+        }
+    });
+
+    function saveAndStart() {
+        const val = selector.value;
+        if(val) {
+            localStorage.setItem('myTeam', val);
+            window.location.href = '/scanner';
+        }
+    }
+</script>
+{% endblock %}

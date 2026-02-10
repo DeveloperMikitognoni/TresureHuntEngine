@@ -67,21 +67,33 @@
         {% block content %}{% endblock %}
     </main>
 
-    <nav class="fixed bottom-0 w-full glass-nav z-50 safe-area-pb">
-        <div class="max-w-lg mx-auto flex justify-around items-center h-16">
-            <a href="/events" class="flex flex-col items-center justify-center w-full h-full space-y-1 {% if request.path == '/events' %}text-blue-600{% else %}text-gray-400{% endif %}">
+    <nav class="fixed bottom-0 w-full z-50 pb-safe">
+        <div class="absolute bottom-0 w-full h-16 bg-white/90 backdrop-blur-md border-t border-gray-200 shadow-lg-up"></div>
+
+        <div class="max-w-lg mx-auto relative h-16 flex justify-between items-center px-6">
+            
+            <a href="/events" class="relative z-10 flex flex-col items-center justify-center w-16 h-full space-y-1 transition-colors {% if request.path == '/events' %}text-blue-600{% else %}text-gray-400 hover:text-gray-600{% endif %}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                <span class="text-[10px] font-bold uppercase tracking-wider">Live Feed</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider">Feed</span>
             </a>
             
-            <a href="/leaderboard" class="flex flex-col items-center justify-center w-full h-full space-y-1 {% if request.path == '/leaderboard' %}text-blue-600{% else %}text-gray-400{% endif %}">
+            <div class="relative -top-6">
+                <a href="/scanner" class="flex items-center justify-center w-16 h-16 rounded-full shadow-xl transform transition-transform active:scale-95 border-4 border-gray-100 {% if request.path == '/scanner' %}bg-slate-800 text-white{% else %}bg-blue-600 text-white hover:bg-blue-500{% endif %}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 17h.01M9 20H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v1m-5 9h5a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                    </svg>
+                </a>
+            </div>
+
+            <a href="/leaderboard" class="relative z-10 flex flex-col items-center justify-center w-16 h-full space-y-1 transition-colors {% if request.path == '/leaderboard' %}text-blue-600{% else %}text-gray-400 hover:text-gray-600{% endif %}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-                <span class="text-[10px] font-bold uppercase tracking-wider">Ranking</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider">Rank</span>
             </a>
+
         </div>
     </nav>
     
