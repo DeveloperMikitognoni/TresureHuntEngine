@@ -53,6 +53,20 @@ def set_game_active(status: bool):
         upsert=True
     )
 
+def get_scoring_settings():
+    config = db.config.find_one({"_id": "scoring_settings"})
+    if config:
+        return config
+    # Impostazioni di default se non esistono nel database
+    default_settings = {
+        "_id": "scoring_settings",
+        "base_points": 20,
+        "bonus_pool": 120,
+        "first_bonus_pct": 25
+    }
+    db.config.insert_one(default_settings)
+    return default_settings
+
 # --- CONTEXT PROCESSOR ---
 # Inietta variabili in tutti i template HTML automaticamente
 @app.context_processor
@@ -104,11 +118,29 @@ def toggle_game():
     set_game_active(not current_status)
     return redirect(request.referrer or '/events')
 
-@app.route("/admin/settings", methods=["GET"])
+@app.route("/admin/settings", methods=["GET", "POST"])
 def admin_settings():
     if not session.get('is_admin'):
         return redirect('/login')
-    return render_template('settings.html')
+        
+    if request.method == "POST":
+        try:
+            # Prende i valori dal form e li salva nel DB
+            db.config.update_one(
+                {"_id": "scoring_settings"},
+                {"$set": {
+                    "base_points": int(request.form.get("base_points", 20)),
+                    "bonus_pool": int(request.form.get("bonus_pool", 120)),
+                    "first_bonus_pct": int(request.form.get("first_bonus_pct", 25))
+                }},
+                upsert=True
+            )
+        except ValueError:
+            pass # Ignora se qualcuno invia testo invece di numeri
+        return redirect('/admin/settings')
+
+    settings = get_scoring_settings()
+    return render_template('settings.html', settings=settings)
 
 @app.route("/admin/reset", methods=["POST"])
 def admin_reset():
@@ -194,6 +226,12 @@ def leanderboard():
     if not session.get('is_admin'):
         return redirect('/login')
 
+    # Recupera i settings dal DB
+    scoring = get_scoring_settings()
+    base_points = scoring.get("base_points", 20)
+    bonus_pool = scoring.get("bonus_pool", 120)
+    first_multiplier = 1.0 + (scoring.get("first_bonus_pct", 25) / 100.0)
+
     leaderboard = {}
     stations = db.list_collection_names()
 
@@ -207,13 +245,19 @@ def leanderboard():
         num_teams = len(entries)
         if num_teams == 0: continue
         
-        bonus_points = round(120 / num_teams)
+        # Uso della pool dinamica
+        bonus_points = round(bonus_pool / num_teams)
         for idx, entry in enumerate(entries):
             team = entry.get("team")
             if not team: continue
             if team not in leaderboard: leaderboard[team] = 0
-            station_points = 20 + bonus_points
-            if idx == 0: station_points *= 1.25
+            
+            # Uso dei punti base dinamici
+            station_points = base_points + bonus_points
+            
+            # Uso del moltiplicatore percentuale dinamico
+            if idx == 0: station_points *= first_multiplier
+            
             leaderboard[team] += station_points
 
     sorted_leaderboard = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)

@@ -3,9 +3,54 @@
 {% block subtitle %}Admin Settings{% endblock %}
 
 {% block content %}
-<div class="pt-6 pb-4">
+<div class="pt-6 pb-4 space-y-6">
+
+    <!-- IMPOSTAZIONI PUNTEGGIO -->
+    <div class="bg-white p-6 rounded-2xl shadow-xl w-full border border-gray-100">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="bg-blue-100 text-blue-600 p-2 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+            </div>
+            <h2 class="text-xl font-bold text-gray-800">Scoring Rules</h2>
+        </div>
+
+        <form action="/admin/settings" method="POST" class="space-y-4">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Base Points (Per Station)</label>
+                <p class="text-xs text-gray-400 mb-2">Points guaranteed to every team discovering a station.</p>
+                <input type="number" name="base_points" value="{{ settings.base_points }}" class="w-full bg-gray-50 border border-gray-200 text-gray-800 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition" required>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Bonus Pool</label>
+                <p class="text-xs text-gray-400 mb-2">Total bonus divided among the teams that found the station (e.g. 120 / 4 teams = +30 pts).</p>
+                <input type="number" name="bonus_pool" value="{{ settings.bonus_pool }}" class="w-full bg-gray-50 border border-gray-200 text-gray-800 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition" required>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">First Discovery Bonus</label>
+                <p class="text-xs text-gray-400 mb-2">Percentage increase applied to the total points for the fastest team.</p>
+                <div class="relative">
+                    <input type="number" name="first_bonus_pct" value="{{ settings.first_bonus_pct }}" class="w-full bg-gray-50 border border-gray-200 text-gray-800 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition" required>
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                        <span class="text-gray-500 font-bold">%</span>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-slate-800 text-white font-bold py-3 mt-4 rounded-xl shadow-lg hover:bg-slate-700 transition transform active:scale-95 flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                Save Settings
+            </button>
+        </form>
+    </div>
+
+    <!-- DANGER ZONE (RESET) -->
     <div class="bg-white p-6 rounded-2xl shadow-xl w-full border border-red-100">
-        
         <div class="text-center mb-6">
             <div class="bg-red-100 text-red-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -20,10 +65,12 @@
 
         <form action="/admin/reset" method="POST" onsubmit="return confirm('Sei sicuro di voler resettare tutti i dati del gioco? Questa operazione è IRREVERSIBILE e tutti i punti/scansioni andranno persi.');">
             <button type="submit" class="w-full bg-red-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-red-700 transition transform active:scale-95 flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
                 Reset Game Data
             </button>
         </form>
-
     </div>
 </div>
 {% endblock %}
