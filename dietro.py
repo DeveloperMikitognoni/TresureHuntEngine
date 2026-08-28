@@ -230,7 +230,8 @@ def leanderboard():
     
 @app.route("/<stationid>/<teamid>", methods=["GET"])
 def handle_get_station_team(stationid, teamid):
-    if not is_game_active():
+    # BLOCCO GIOCO IN PAUSA (Ignorato se il team è test-admin)
+    if not is_game_active() and teamid != "test-admin":
         return jsonify({
             "status": "error",
             "message": "⛔ Game has not started yet (or is paused).",
