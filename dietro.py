@@ -66,7 +66,9 @@ def inject_globals():
 
 @app.route("/", methods=["GET"])
 def index():
-    return render_template('index.html')
+    # Passiamo le squadre alla pagina iniziale, nascondendo "test-admin" ai giocatori!
+    display_teams = [t for t in allowedTeams if t != "test-admin"]
+    return render_template('index.html', teams=display_teams)
 
 @app.route("/scanner", methods=["GET"])
 def scanner():
