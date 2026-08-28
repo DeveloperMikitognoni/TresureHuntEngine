@@ -24,7 +24,7 @@ allowedStations = [
     "clue10-D8G2HJ4K6LZ1", "clue11-X9CV5B3NM2Q8", "clue12-W7R4TY9U1IO3",
     "Teo", "Alex"
 ]
-allowedTeams = [f"team{i}" for i in range(1, 101)]
+allowedTeams = [f"team{i}" for i in range(1, 101)] + ["test-admin"]
 
 app = Flask(__name__)
 app.secret_key = APP_SECRET_KEY # Abilita le sessioni
@@ -91,24 +91,33 @@ def toggle_game():
     set_game_active(not current_status)
     return redirect(request.referrer or '/events')
 
-# --- ROTTE STANDARD ---
+@app.route("/admin/settings", methods=["GET"])
+def admin_settings():
+    if not session.get('is_admin'):
+        return redirect('/login')
+    return render_template('settings.html')
 
-@app.route("/", methods=["GET"])
-def home():
-    """Landing page: Selezione del Team."""
-    # Ordina i team in modo numerico (1, 2, ... 10, non 1, 10, 100)
-    teams_list = sorted(allowedTeams, key=lambda x: int(x.replace("team", "")))
-    return render_template("index.html", teams=teams_list)
+@app.route("/admin/reset", methods=["POST"])
+def admin_reset():
+    if not session.get('is_admin'):
+        return redirect('/login')
+    
+    # Svuota tutte le collezioni delle stazioni
+    for station in allowedStations:
+        db[station].delete_many({})
+        
+    return redirect('/events')
 
-@app.route("/scanner", methods=["GET"])
-def scanner_page():
-    """Pagina dello Scanner vero e proprio."""
-    return render_template("scanner.html")
+
+# --- ROTTE STANDARD AGGIORNATE ---
 
 @app.route("/events", methods=["GET"])
 def events_feed():
+    # Protezione pagina log
+    if not session.get('is_admin'):
+        return redirect('/login')
+
     all_events = []
-    
     for station_name in allowedStations:
         collection = db[station_name]
         entries = list(collection.find({}, {"team": 1, "timestamp": 1, "_id": 0}))
@@ -121,6 +130,9 @@ def events_feed():
 
     first_discoveries = {}
     for e in all_events:
+        # Escludiamo le scansioni di test dal rubare il "first discovery"
+        if e.get('team') == 'test-admin': continue
+        
         s = e['station']
         t = e['ts_raw']
         if s not in first_discoveries or t < first_discoveries[s]:
@@ -141,13 +153,16 @@ def events_feed():
 
     display_events = []
     for event in filtered_events:
-        is_first = (event['ts_raw'] == first_discoveries.get(event['station']))
+        is_test = event.get('team') == 'test-admin'
+        is_first = (event['ts_raw'] == first_discoveries.get(event['station'])) and not is_test
+        
         display_events.append({
-            "team_display": event.get('team', 'Unknown').replace("team", "Team ").title(),
+            "team_display": "Admin Test" if is_test else event.get('team', 'Unknown').replace("team", "Team ").title(),
             "station": event.get('station', 'Unknown'),
             "time": event['timestamp_oslo'].strftime("%H:%M"),
             "is_special": event.get('station') in ["Teo", "Alex"],
-            "is_first": is_first
+            "is_first": is_first,
+            "is_test": is_test
         })
 
     return render_template(
@@ -162,6 +177,10 @@ def events_feed():
 
 @app.route("/leaderboard", methods=["GET"])
 def leanderboard():
+    # Protezione pagina leaderboard
+    if not session.get('is_admin'):
+        return redirect('/login')
+
     leaderboard = {}
     stations = db.list_collection_names()
 
@@ -169,7 +188,9 @@ def leanderboard():
         if station not in allowedStations: continue
 
         collection = db[station]
-        entries = list(collection.find({}).sort("timestamp", 1))
+        # IGNORIAMO IL TEAM DI TEST NELLA QUERY PER IL CALCOLO
+        entries = list(collection.find({"team": {"$ne": "test-admin"}}).sort("timestamp", 1))
+        
         num_teams = len(entries)
         if num_teams == 0: continue
         
@@ -193,7 +214,7 @@ def leanderboard():
         })
 
     return render_template('leaderboard.html', leaderboard=display_board)
-
+    
 @app.route("/<stationid>/<teamid>", methods=["GET"])
 def handle_get_station_team(stationid, teamid):
     if not is_game_active():

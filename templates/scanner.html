@@ -45,15 +45,27 @@
 </style>
 
 <script>
-    // 1. Verifica Team
-    const myTeam = localStorage.getItem('myTeam');
-    if (!myTeam) {
-        window.location.href = '/'; // Se non c'è team, torna alla home
+    // 1. Verifica Team / Modalità Admin
+    const isAdmin = "{{ 'true' if session.get('is_admin') else 'false' }}" === "true";
+    let myTeam = "";
+
+    if (isAdmin) {
+        myTeam = "test-admin";
+        document.getElementById('teamDisplay').innerText = "Admin Test Mode";
+        // Rimuoviamo il "(Change)" visivamente perché l'admin non può farne logout da qui
+        const changeText = document.querySelector('.text-xs.text-gray-400');
+        if (changeText) changeText.style.display = 'none';
     } else {
-        document.getElementById('teamDisplay').innerText = myTeam.replace('team', 'Team ');
+        myTeam = localStorage.getItem('myTeam');
+        if (!myTeam) {
+            window.location.href = '/'; 
+        } else {
+            document.getElementById('teamDisplay').innerText = myTeam.replace('team', 'Team ');
+        }
     }
 
     function changeTeam() {
+        if (isAdmin) return; // Disattiva il click se è admin
         if(confirm("Logout from " + myTeam + "?")) {
             localStorage.removeItem('myTeam');
             window.location.href = '/';

@@ -47,6 +47,12 @@
                         </button>
                     </form>
 
+                    <a href="/admin/settings" class="bg-slate-800 p-2 rounded-full cursor-pointer hover:bg-slate-700 transition text-gray-400 hover:text-white" title="Impostazioni">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+                        </svg>
+                    </a>
+
                     <a href="/logout" class="bg-slate-800 p-2 rounded-full cursor-pointer hover:bg-slate-700 transition text-gray-400 hover:text-white" title="Logout">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -71,14 +77,14 @@
         <div class="absolute bottom-0 w-full h-16 bg-white/90 backdrop-blur-md border-t border-gray-200 shadow-lg-up"></div>
 
         <div class="max-w-lg mx-auto relative h-16 flex justify-between items-center px-6">
-            
+            {% if is_admin %}
             <a href="/events" class="relative z-10 flex flex-col items-center justify-center w-16 h-full space-y-1 transition-colors {% if request.path == '/events' %}text-blue-600{% else %}text-gray-400 hover:text-gray-600{% endif %}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
                 <span class="text-[10px] font-bold uppercase tracking-wider">Feed</span>
             </a>
-            
+            {% else %}
             <div class="relative -top-6">
                 <a href="/scanner" class="flex items-center justify-center w-16 h-16 rounded-full shadow-xl transform transition-transform active:scale-95 border-4 border-gray-100 {% if request.path == '/scanner' %}bg-slate-800 text-white{% else %}bg-blue-600 text-white hover:bg-blue-500{% endif %}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -86,14 +92,14 @@
                     </svg>
                 </a>
             </div>
-
+            {% if is_admin %}
             <a href="/leaderboard" class="relative z-10 flex flex-col items-center justify-center w-16 h-full space-y-1 transition-colors {% if request.path == '/leaderboard' %}text-blue-600{% else %}text-gray-400 hover:text-gray-600{% endif %}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
                 <span class="text-[10px] font-bold uppercase tracking-wider">Rank</span>
             </a>
-
+            {% else %}
         </div>
     </nav>
     

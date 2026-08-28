@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block subtitle %}Admin Settings{% endblock %}
+
+{% block content %}
+<div class="pt-6 pb-4">
+    <div class="bg-white p-6 rounded-2xl shadow-xl w-full border border-red-100">
+        
+        <div class="text-center mb-6">
+            <div class="bg-red-100 text-red-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800">Danger Zone</h2>
+            <p class="text-gray-500 text-sm mt-2">
+                Resetting the game will delete <strong>ALL</strong> scanned events and leaderboards from the database. This action is irreversible.
+            </p>
+        </div>
+
+        <form action="/admin/reset" method="POST" onsubmit="return confirm('Sei sicuro di voler resettare tutti i dati del gioco? Questa operazione è IRREVERSIBILE e tutti i punti/scansioni andranno persi.');">
+            <button type="submit" class="w-full bg-red-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-red-700 transition transform active:scale-95 flex items-center justify-center gap-2">
+                Reset Game Data
+            </button>
+        </form>
+
+    </div>
+</div>
+{% endblock %}
