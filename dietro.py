@@ -62,6 +62,17 @@ def inject_globals():
         is_admin=session.get('is_admin', False) # Dice al template se siamo loggati
     )
 
+# --- ROTTE PAGINE PUBBLICHE ---
+
+@app.route("/", methods=["GET"])
+def index():
+    return render_template('index.html')
+
+@app.route("/scanner", methods=["GET"])
+def scanner():
+    return render_template('scanner.html')
+
+
 # --- ROTTE ADMIN / LOGIN ---
 
 @app.route("/login", methods=["GET", "POST"])

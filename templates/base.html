@@ -77,6 +77,8 @@
         <div class="absolute bottom-0 w-full h-16 bg-white/90 backdrop-blur-md border-t border-gray-200 shadow-lg-up"></div>
 
         <div class="max-w-lg mx-auto relative h-16 flex justify-between items-center px-6">
+            
+            <!-- PULSANTE FEED (Solo Admin) -->
             {% if is_admin %}
             <a href="/events" class="relative z-10 flex flex-col items-center justify-center w-16 h-full space-y-1 transition-colors {% if request.path == '/events' %}text-blue-600{% else %}text-gray-400 hover:text-gray-600{% endif %}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -85,6 +87,10 @@
                 <span class="text-[10px] font-bold uppercase tracking-wider">Feed</span>
             </a>
             {% else %}
+            <div class="w-16"></div> <!-- Spazio vuoto per centrare -->
+            {% endif %}
+            
+            <!-- PULSANTE SCANNER (Tutti) -->
             <div class="relative -top-6">
                 <a href="/scanner" class="flex items-center justify-center w-16 h-16 rounded-full shadow-xl transform transition-transform active:scale-95 border-4 border-gray-100 {% if request.path == '/scanner' %}bg-slate-800 text-white{% else %}bg-blue-600 text-white hover:bg-blue-500{% endif %}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -92,6 +98,8 @@
                     </svg>
                 </a>
             </div>
+
+            <!-- PULSANTE LEADERBOARD (Solo Admin) -->
             {% if is_admin %}
             <a href="/leaderboard" class="relative z-10 flex flex-col items-center justify-center w-16 h-full space-y-1 transition-colors {% if request.path == '/leaderboard' %}text-blue-600{% else %}text-gray-400 hover:text-gray-600{% endif %}">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -100,12 +108,14 @@
                 <span class="text-[10px] font-bold uppercase tracking-wider">Rank</span>
             </a>
             {% else %}
+            <div class="w-16"></div> <!-- Spazio vuoto per centrare -->
+            {% endif %}
+
         </div>
     </nav>
     
     {% if request.path != '/login' %}
     <script>
-        // Refresh automatico solo se non siamo nel login
         setTimeout(() => window.location.reload(), 30000);
     </script>
     {% endif %}
